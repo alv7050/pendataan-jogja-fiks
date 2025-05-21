@@ -1,0 +1,201 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pendataan ke Jogja</title>
+  <style>
+    body {
+      background-color: black;
+      color: white;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      text-align: center;
+      padding: 2rem;
+      background-image: url('kaibandara.png'); /* Ganti sesuai nama file background kamu */
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-position: center;
+    }
+    .form-container {
+      background-color: rgba(0, 0, 0, 0.75);
+      padding: 2rem;
+      border-radius: 12px;
+      display: inline-block;
+      max-width: 400px;
+    }
+    label, input, select, button {
+      display: block;
+      margin: 1rem auto;
+      font-size: 1rem;
+      width: 90%;
+    }
+    input, select {
+      padding: 0.6rem;
+      border-radius: 5px;
+      border: none;
+    }
+    button {
+      padding: 0.6rem 1.2rem;
+      background-color: white;
+      color: black;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    button:hover {
+      background-color: #ddd;
+    }
+    #thanksMessage {
+      margin-top: 2rem;
+      font-size: 1.1rem;
+      color: lightgreen;
+    }
+    #dataList {
+      display: none;
+      margin-top: 2rem;
+      text-align: left;
+      background-color: rgba(255, 255, 255, 0.1);
+      padding: 1rem;
+      border-radius: 10px;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .entry {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem;
+      border-bottom: 1px solid #888;
+    }
+    .delete-btn {
+      background-color: red;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 0.3rem 0.6rem;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="form-container">
+    <h1>Pendataan Penumpang ke Jogja</h1>
+    <p>Yuk, isi data singkat ini buat yang mau ikut ke Jogja!</p>
+    <form id="mainForm">
+      <label for="nama">Nama Lengkap:</label>
+      <input type="text" id="nama" name="nama" placeholder="Masukkan nama lengkap" required>
+
+      <label for="ikut">Mau ikut jalan-jalan ke Jogja?</label>
+      <select id="ikut" name="ikut" required>
+        <option value="">--Pilih dulu ya--</option>
+        <option value="ya">Iya, aku ikut!</option>
+        <option value="tidak">Belum bisa ikut</option>
+      </select>
+
+      <div id="dataTambahan" style="display:none;">
+        <label for="nik">Masukkan NIK kamu:</label>
+        <input type="text" id="nik" name="nik" maxlength="16" placeholder="Contoh: 1234567890123456">
+      </div>
+
+      <button type="submit">Kirim Data</button>
+    </form>
+    <div id="thanksMessage"></div>
+  </div>
+
+  <div id="dataList"></div>
+
+  <script>
+    const ikutSelect = document.getElementById('ikut');
+    const dataTambahan = document.getElementById('dataTambahan');
+    const form = document.getElementById('mainForm');
+    const thanksMessage = document.getElementById('thanksMessage');
+    const dataList = document.getElementById('dataList');
+
+    let tapCount = 0;
+    let lastTap = 0;
+
+    ikutSelect.addEventListener('change', () => {
+      if (ikutSelect.value === 'ya') {
+        dataTambahan.style.display = 'block';
+      } else {
+        dataTambahan.style.display = 'none';
+      }
+    });
+
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const nama = document.getElementById('nama').value.trim();
+      const ikut = document.getElementById('ikut').value;
+      const nik = document.getElementById('nik').value.trim();
+
+      if (nama.split(" ").length < 2) {
+        alert("Nama harus diisi lengkap (minimal 2 kata).");
+        return;
+      }
+
+      if (ikut === 'ya' && nik.length !== 16) {
+        alert("NIK belum lengkap nih (harus 16 digit).");
+        return;
+      }
+
+      const data = { nama, ikut, nik };
+      const existing = JSON.parse(localStorage.getItem('pendataan') || '[]');
+      existing.push(data);
+      localStorage.setItem('pendataan', JSON.stringify(existing));
+
+      form.reset();
+      dataTambahan.style.display = 'none';
+
+      if (ikut === 'tidak') {
+        thanksMessage.innerText = `Makasih ya, ${nama}. Semoga lain waktu bisa ikut! 😊`;
+      } else {
+        thanksMessage.innerText = `Siap, test! Data kamu udah kami catat. Terimakasih atas kerjasamanya, saya (alfi) apresiasi tingkah anda melakukan pendataan😈😈👍`;
+      }
+    });
+
+    document.body.addEventListener('click', () => {
+      const now = new Date().getTime();
+      if (now - lastTap < 500) {
+        tapCount++;
+      } else {
+        tapCount = 1;
+      }
+      lastTap = now;
+
+      if (tapCount === 3) {
+        showDataList();
+        tapCount = 0;
+      }
+    });
+
+    function showDataList() {
+      const data = JSON.parse(localStorage.getItem('pendataan') || '[]');
+      if (data.length === 0) {
+        dataList.innerHTML = "<p>Belum ada data pendataan.</p>";
+      } else {
+        let html = `<h2>Total Penumpang: ${data.length}</h2>`;
+        html += `<div>`;
+        data.forEach((d, i) => {
+          html += `<div class="entry">
+            <span>${i+1}. [${d.ikut}] ${d.nama} - ${d.nik}</span>
+            <button class="delete-btn" onclick="deleteEntry(${i})">🗑️</button>
+          </div>`;
+        });
+        html += `</div>`;
+        dataList.innerHTML = html;
+      }
+      dataList.style.display = 'block';
+    }
+
+    function deleteEntry(index) {
+      const data = JSON.parse(localStorage.getItem('pendataan') || '[]');
+      data.splice(index, 1);
+      localStorage.setItem('pendataan', JSON.stringify(data));
+      showDataList();
+    }
+  </script>
+</body>
+</html>
